@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ASTRA Gacha</title> 
+<title>ASTRA Gacha</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:white;font-family:Arial,sans-serif}
@@ -32,11 +32,9 @@ small{color:#aebedb;font-size:12px}
 .bar{height:9px;background:#080e1d;border-radius:10px;overflow:hidden;margin:8px 0}
 .bar span{display:block;height:100%;background:#63e3ff}
 .log{background:#080e1d;padding:12px;border-radius:10px;min-height:90px;max-height:170px;overflow:auto}
-#wheel{width:190px;height:190px;margin:20px auto;border-radius:50%;border:9px solid #65dcff;background:conic-gradient(#ffcf65 0 20%,#6846a5 20% 40%,#247e9b 40% 60%,#a83e75 60% 80%,#317b58 80%);display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:bold;box-shadow:0 0 25px #65dcff55;transition:transform 4s cubic-bezier(.12,.7,.15,1)}
-#wheel span{background:#101a30;padding:15px;border-radius:50%}
-.wheel-pointer{font-size:25px;text-align:center;margin-bottom:-20px}
 .prize-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
-.prize{background:#243657;border-radius:9px;padding:10px;text-align:center;font-size:13px}
+.prize{background:#243657;border-radius:9px;padding:10px;text-align:center;font-size:13px;transition:all .12s ease}
+.prize.active{background:#315b88;outline:3px solid #65dcff;box-shadow:0 0 20px #65dcff;transform:scale(1.04)}
 .hidden{display:none}
 @media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr)}nav{white-space:nowrap}}
 </style>
@@ -79,7 +77,9 @@ small{color:#aebedb;font-size:12px}
 <p>Pity Legendario: <b id="pity">0</b>/300</p>
 <p class="stat">Mítico: sin pity.</p>
 <button onclick="showRates()">Ver probabilidades</button>
+<button onclick="showBannerCharacters()">Ver personajes del banner</button>
 <div id="rates" class="hidden"></div>
+<div id="bannerCharacters" class="hidden"></div>
 </div>
 <div class="panel">
 <h3>Resultados</h3>
@@ -160,8 +160,6 @@ small{color:#aebedb;font-size:12px}
 </select>
 <h3>Premios disponibles</h3>
 <div id="wheelPrizes" class="prize-list"></div>
-<div class="wheel-pointer">▼</div>
-<div id="wheel"><span>ASTRA</span></div>
 <h2 id="casinoResult">¿Tendrás suerte?</h2>
 <button id="spinBtn" onclick="spin()">Girar ruleta</button>
 <p id="casinoLog"></p>
@@ -185,7 +183,7 @@ const chars=[
 ['megumi','Megumi','🐺','Épico',55,7],
 ['nobara','Nobara','🔨','Épico',52,7],
 ['gojo','Gojo','🔵','Legendario',105,14],
-['kokushibo','Kokushibo','🌙','Legendario',115,14],
+['kokushibo','Kokushibo','🌙','Mítico',230,25],
 ['sukuna','Sukuna','🔥','Mítico',220,25],
 ['yoriichi','Yoriichi','☀️','Mítico',230,25],
 ['tanjiro','Tanjiro','🌊','Épico',58,7],
@@ -193,19 +191,24 @@ const chars=[
 ['yuji','Yuji','👊','Raro',34,4],
 ['mahito','Mahito','🧩','Legendario',110,14],
 ['luffy','Luffy','👒','Épico',60,7],
-['ichigo','Ichigo','⚔️','Legendario',118,14]
+['ichigo','Ichigo','⚔️','Legendario',118,14],
+['sanemi','Sanemi','🌪️','Legendario',120,15],
+['gyomei','Gyomei Himejima','🪨','Legendario',130,16],
+['madara','Madara','🔥','Mítico',240,27]
 ].map(a=>({id:a[0],name:a[1],emoji:a[2],rarity:a[3],power:a[4],income:a[5]}));
 
 const banners={
 sukuna:'pollo aldeano aprendiz cazador yuji megumi nobara gojo mahito sukuna',
 demon:'pollo aldeano aprendiz cazador nezuko zenitsu inosuke tanjiro kokushibo yoriichi',
-anime:'pollo aldeano aprendiz cazador yuji zenitsu luffy megumi ichigo gojo sukuna'
+anime:'pollo aldeano aprendiz cazador yuji zenitsu luffy megumi ichigo gojo madara'
 };
+
 const chances={'Comun':55,'Poco-común':25,'Raro':12,'Épico':6,'Legendario':1.8,'Mítico':.2};
 
 const sacrificeOdds={
 'Comun':10,'Poco-común':25,'Raro':45,'Épico':65,'Legendario':85,'Mítico':100
 };
+
 const ticketValues={
 'Comun':1,'Poco-común':2,'Raro':3,'Épico':5,'Legendario':10,'Mítico':20
 };
@@ -214,29 +217,29 @@ const wheelData={
 normal:{
 cost:1,
 prizes:[
-{name:'20 gemas',value:20,weight:40,emoji:'💎'},
-{name:'50 gemas',value:50,weight:30,emoji:'💎'},
-{name:'100 gemas',value:100,weight:18,emoji:'💎'},
-{name:'250 gemas',value:250,weight:9,emoji:'💎'},
-{name:'500 gemas',value:500,weight:3,emoji:'💎'}
+{name:'20 gemas',value:20,weight:45,emoji:'💎'},
+{name:'40 gemas',value:40,weight:30,emoji:'💎'},
+{name:'70 gemas',value:70,weight:15,emoji:'💎'},
+{name:'100 gemas',value:100,weight:5,emoji:'💎'},
+{name:'Sanemi',character:'sanemi',weight:5,emoji:'🌪️'}
 ]},
 silver:{
 cost:3,
 prizes:[
-{name:'100 gemas',value:100,weight:35,emoji:'💎'},
-{name:'200 gemas',value:200,weight:30,emoji:'💎'},
-{name:'400 gemas',value:400,weight:20,emoji:'💎'},
-{name:'700 gemas',value:700,weight:10,emoji:'💎'},
-{name:'1000 gemas',value:1000,weight:5,emoji:'💎'}
+{name:'50 gemas',value:50,weight:40,emoji:'💎'},
+{name:'100 gemas',value:100,weight:30,emoji:'💎'},
+{name:'150 gemas',value:150,weight:18,emoji:'💎'},
+{name:'250 gemas',value:250,weight:10,emoji:'💎'},
+{name:'Gyomei Himejima',character:'gyomei',weight:2,emoji:'🪨'}
 ]},
 gold:{
 cost:5,
 prizes:[
-{name:'300 gemas',value:300,weight:35,emoji:'💎'},
-{name:'600 gemas',value:600,weight:30,emoji:'💎'},
-{name:'1000 gemas',value:1000,weight:20,emoji:'💎'},
-{name:'2000 gemas',value:2000,weight:10,emoji:'💎'},
-{name:'5000 gemas',value:5000,weight:5,emoji:'💎'}
+{name:'100 gemas',value:100,weight:40,emoji:'💎'},
+{name:'200 gemas',value:200,weight:30,emoji:'💎'},
+{name:'400 gemas',value:400,weight:19,emoji:'💎'},
+{name:'800 gemas',value:800,weight:10,emoji:'💎'},
+{name:'Kokushibo',character:'kokushibo',weight:1,emoji:'🌙'}
 ]}
 };
 
@@ -248,6 +251,7 @@ sacrifices:0,spins:0
 
 let E={hp:100,max:100,php:100,pmax:100,level:1,over:false};
 let spinning=false;
+let wheelTimer=null;
 const $=id=>document.getElementById(id);
 const get=id=>chars.find(c=>c.id===id);
 const count=id=>S.inventory[id]||0;
@@ -266,11 +270,11 @@ if(id==='battle')battleRender();
 }
 
 function power(){
-return S.equipped.reduce((n,id)=>n+get(id).power,0);
+return S.equipped.reduce((n,id)=>n+(get(id)?.power||0),0);
 }
 
 function income(){
-return S.equipped.reduce((n,id)=>n+get(id).income,0);
+return S.equipped.reduce((n,id)=>n+(get(id)?.income||0),0);
 }
 
 function card(c,owned=false){
@@ -301,6 +305,7 @@ demon:'Cazadores y Demonios',
 anime:'Leyendas del Anime'
 }[S.banner];
 localStorage.setItem('astraSave',JSON.stringify(S));
+$('bannerCharacters').classList.add('hidden');
 }
 
 function rarityRoll(){
@@ -351,6 +356,33 @@ el.innerHTML='<h3>Probabilidades de invocación</h3>'+
 Object.entries(chances).map(([r,p])=>
 `<p class="${r}">${r}: <b>${p}%</b></p>`).join('')+
 '<small>Las probabilidades se aplican a cada invocación.</small>';
+el.classList.remove('hidden');
+}
+
+function showBannerCharacters(){
+let el=$('bannerCharacters');
+if(!el.classList.contains('hidden')){
+el.classList.add('hidden');
+return;
+}
+
+let pool=banners[S.banner].split(' ').map(get).filter(Boolean);
+let rarities={};
+
+pool.forEach(c=>{
+rarities[c.rarity]=(rarities[c.rarity]||0)+1;
+});
+
+el.innerHTML='<h3>Personajes disponibles</h3>'+
+pool.map(c=>{
+let probability=chances[c.rarity]/rarities[c.rarity];
+return `<div class="row between">
+<span class="${c.rarity}">${c.emoji} ${c.name} · ${c.rarity}</span>
+<b>${probability.toFixed(2)}%</b>
+</div>`;
+}).join('')+
+'<small>El mítico de cada banner tiene una probabilidad total de 0,2%. No tiene pity.</small>';
+
 el.classList.remove('hidden');
 }
 
@@ -430,41 +462,78 @@ function showWheelPrizes(){
 let type=$('wheelType').value;
 let data=wheelData[type];
 $('spinBtn').textContent=`Girar ruleta · ${data.cost} tickets`;
-$('wheelPrizes').innerHTML=data.prizes.map(p=>
-`<div class="prize">${p.emoji}<br><b>${p.name}</b><br><small>Probabilidad: ${p.weight}%</small></div>`
+$('wheelPrizes').innerHTML=data.prizes.map((p,i)=>
+`<div class="prize" id="wheelPrize${i}">
+${p.emoji}<br><b>${p.name}</b><br>
+<small>Probabilidad: ${p.weight}%</small>
+</div>`
 ).join('');
 }
 
 function spin(){
 if(spinning)return;
+
 let type=$('wheelType').value;
 let data=wheelData[type];
-if(S.tickets<data.cost)return alert('No tienes suficientes tickets.');
+
+if(S.tickets<data.cost)
+return alert('No tienes suficientes tickets.');
+
 S.tickets-=data.cost;
 spinning=true;
 $('spinBtn').disabled=true;
-$('casinoResult').textContent='La ruleta está girando...';
+$('casinoResult').textContent='¡La luz está avanzando!';
 $('casinoLog').textContent='Buena suerte.';
+
 let x=Math.random()*100;
-let prize=data.prizes[data.prizes.length-1];
-for(let p of data.prizes){
-x-=p.weight;
-if(x<0){prize=p;break;}
+let prizeIndex=0;
+
+for(let i=0;i<data.prizes.length;i++){
+x-=data.prizes[i].weight;
+if(x<0){
+prizeIndex=i;
+break;
 }
-let wheel=$('wheel');
-let current=Number(wheel.dataset.rotation||0);
-let rotation=current+1800+Math.floor(Math.random()*360);
-wheel.style.transform=`rotate(${rotation}deg)`;
-wheel.dataset.rotation=rotation;
-setTimeout(()=>{
+}
+
+let countSteps=0;
+let totalSteps=35+prizeIndex;
+let current=0;
+
+wheelTimer=setInterval(()=>{
+document.querySelectorAll('#wheelPrizes .prize')
+.forEach(p=>p.classList.remove('active'));
+
+current=countSteps%data.prizes.length;
+$('wheelPrize'+current).classList.add('active');
+countSteps++;
+
+if(countSteps>=totalSteps){
+clearInterval(wheelTimer);
+
+document.querySelectorAll('#wheelPrizes .prize')
+.forEach(p=>p.classList.remove('active'));
+
+$('wheelPrize'+prizeIndex).classList.add('active');
+
+let prize=data.prizes[prizeIndex];
+
+if(prize.character){
+S.inventory[prize.character]=(S.inventory[prize.character]||0)+1;
+$('casinoResult').textContent='¡CONSEGUISTE A '+prize.name.toUpperCase()+'!';
+$('casinoLog').textContent='¡El personaje ya está en tu inventario!';
+}else{
 S.gems+=prize.value;
-S.spins++;
 $('casinoResult').textContent=`¡Ganaste ${prize.name}!`;
-$('casinoLog').textContent=`La ruleta te entregó ${prize.value} gemas.`;
+$('casinoLog').textContent=`Recibiste ${prize.value} gemas.`;
+}
+
+S.spins++;
 spinning=false;
 $('spinBtn').disabled=false;
 save();
-},4100);
+}
+},110);
 }
 
 function newBattle(){
@@ -571,6 +640,7 @@ sukuna:'Dominio Maldito',
 demon:'Cazadores y Demonios',
 anime:'Leyendas del Anime'
 }[S.banner];
+
 newBattle();
 render();
 showWheelPrizes();
