@@ -13,7 +13,7 @@ h1{color:#65dcff;margin:5px}
 nav{display:flex;gap:6px;overflow:auto;margin-top:12px}
 button,select,input{padding:10px;border-radius:9px;border:1px solid #405477;background:#243657;color:white}
 button{cursor:pointer;font-weight:bold}
-button:disabled{opacity:.4}
+button:disabled{opacity:.4;cursor:not-allowed}
 main{max-width:1000px;margin:auto;padding:15px}
 section{display:none}
 section.active{display:block}
@@ -30,16 +30,26 @@ small{color:#aebedb;font-size:12px}
 .between{justify-content:space-between}
 .pill{background:#243657;padding:8px;border-radius:20px}
 .bar{height:9px;background:#080e1d;border-radius:10px;overflow:hidden;margin:8px 0}
-.bar span{display:block;height:100%;background:#63e3ff}
-.log{background:#080e1d;padding:12px;border-radius:10px;min-height:90px;max-height:170px;overflow:auto}
+.bar span{display:block;height:100%;background:#63e3ff;transition:width .3s}
+.log{background:#080e1d;padding:12px;border-radius:10px;min-height:90px;max-height:220px;overflow:auto}
 .prize-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
 .prize{background:#243657;border-radius:9px;padding:10px;text-align:center;font-size:13px;transition:all .12s ease}
 .prize.active{background:#315b88;outline:3px solid #65dcff;box-shadow:0 0 20px #65dcff;transform:scale(1.04)}
 .hidden{display:none}
-@media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr)}nav{white-space:nowrap}}
+.battle-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.battle-actions button{min-height:48px}
+.boss{font-size:65px;text-align:center;padding:12px}
+.phase{color:#ffd36b;font-weight:bold}
+.energy{color:#65dcff;font-weight:bold}
+@media(max-width:500px){
+.grid{grid-template-columns:repeat(2,1fr)}
+nav{white-space:nowrap}
+.battle-actions{grid-template-columns:1fr 1fr}
+}
 </style>
 </head>
 <body>
+
 <header>
 <div class="row between">
 <h1>✦ ASTRA</h1>
@@ -59,6 +69,7 @@ small{color:#aebedb;font-size:12px}
 </header>
 
 <main>
+
 <section id="gacha" class="active">
 <div class="hero">
 <h2 id="bannerTitle">Dominio Maldito</h2>
@@ -68,6 +79,7 @@ small{color:#aebedb;font-size:12px}
 <button onclick="pull(10)">Invocar ×10 · 900 💎</button>
 </div>
 </div>
+
 <div class="panel">
 <select id="banner" onchange="changeBanner()">
 <option value="sukuna">Dominio Maldito</option>
@@ -81,6 +93,7 @@ small{color:#aebedb;font-size:12px}
 <div id="rates" class="hidden"></div>
 <div id="bannerCharacters" class="hidden"></div>
 </div>
+
 <div class="panel">
 <h3>Resultados</h3>
 <div id="results" class="grid"></div>
@@ -106,8 +119,9 @@ small{color:#aebedb;font-size:12px}
 <section id="battle">
 <div class="hero">
 <h2>Campo de batalla</h2>
-<p>Derrota enemigos para ganar gemas y tickets.</p>
+<p>Enfréntate a jefes con varias fases y consigue recompensas.</p>
 </div>
+
 <div class="panel">
 <h3>Recompensas posibles</h3>
 <div class="prize-list">
@@ -115,20 +129,41 @@ small{color:#aebedb;font-size:12px}
 <div class="prize">🎟️ Tickets<br><b>1 + nivel / 4</b></div>
 <div class="prize">🔵 Gojo<br><b>0,01 % por combate</b></div>
 </div>
-<p class="stat">Las recompensas se revisan al terminar cada combate, incluso si pierdes.</p>
+<p class="stat">Gojo solo puede conseguirse al terminar un combate.</p>
 </div>
+
 <div class="panel">
-<h3 id="enemyName">Maldición errante</h3>
-<div class="pic" id="enemyEmoji">👹</div>
-<div class="bar"><span id="enemyBar" style="width:100%"></span></div>
+<div class="row between">
+<h3 id="enemyName">Jefe</h3>
+<span class="phase" id="bossPhase">Fase 1/3</span>
+</div>
+<div class="boss" id="enemyEmoji">👹</div>
 <p id="enemyHp"></p>
+<div class="bar"><span id="enemyBar" style="width:100%"></span></div>
+
 <h3>Tu equipo</h3>
 <div id="battleTeam" class="grid"></div>
-<div class="bar"><span id="playerBar" style="width:100%"></span></div>
+
 <p id="playerHp"></p>
-<button onclick="attack()" id="attackBtn">Atacar</button>
-<button onclick="newBattle()">Nuevo enemigo</button>
-<div id="battleLog" class="log">¡Prepárate!</div>
+<div class="bar"><span id="playerBar" style="width:100%"></span></div>
+
+<p class="energy">⚡ Energía: <span id="energyText">0</span>/100</p>
+<div class="bar"><span id="energyBar" style="width:0%"></span></div>
+
+<h3>Acciones</h3>
+<div class="battle-actions">
+<button onclick="basicAttack()">⚔️ Ataque básico</button>
+<button onclick="useSkill(1)" id="skill1Btn">✨ Habilidad 1</button>
+<button onclick="useSkill(2)" id="skill2Btn">💥 Habilidad 2</button>
+<button onclick="ultimate()" id="ultimateBtn">🌟 Definitiva</button>
+</div>
+
+<p class="stat" id="skillInfo">Ataca para acumular energía y utilizar habilidades.</p>
+
+<div class="row">
+<button onclick="newBattle()">Nuevo jefe</button>
+</div>
+<div id="battleLog" class="log">¡Prepárate para luchar!</div>
 </div>
 </section>
 
@@ -170,6 +205,7 @@ small{color:#aebedb;font-size:12px}
 <div class="hero"><h2>Misiones</h2></div>
 <div class="panel" id="missionList"></div>
 </section>
+
 </main>
 
 <script>
@@ -178,39 +214,78 @@ const chars=[
 ['aldeano','Aldeano','🧑‍🌾','Comun',7,1],
 ['aprendiz','Aprendiz','🪄','Poco-común',12,2],
 ['cazador','Cazador novato','🗡️','Poco-común',15,2],
-['zenitsu','Zenitsu','⚡','Raro',28,4],
-['inosuke','Inosuke','🐗','Raro',32,4],
+['yuji','Yuji','👊','Raro',34,4],
 ['megumi','Megumi','🐺','Épico',55,7],
 ['nobara','Nobara','🔨','Épico',52,7],
-['gojo','Gojo','🔵','Legendario',105,14],
-['kokushibo','Kokushibo','🌙','Mítico',230,25],
-['sukuna','Sukuna','🔥','Mítico',220,25],
-['yoriichi','Yoriichi','☀️','Mítico',230,25],
-['tanjiro','Tanjiro','🌊','Épico',58,7],
-['nezuko','Nezuko','🎋','Raro',30,4],
-['yuji','Yuji','👊','Raro',34,4],
+['jogo','Jogo','🌋','Legendario',108,14],
 ['mahito','Mahito','🧩','Legendario',110,14],
+['sukuna','Sukuna','🔥','Mítico',220,25],
+
+['murata','Murata','🗡️','Comun',6,1],
+['kanao','Kanao','🦋','Poco-común',17,2],
+['zenitsu','Zenitsu','⚡','Raro',28,4],
+['inosuke','Inosuke','🐗','Raro',32,4],
+['tanjiro','Tanjiro','🌊','Épico',58,7],
+['rengoku','Rengoku','🔥','Épico',65,8],
+['giyu','Giyu','💧','Épico',62,8],
+['akaza','Akaza','🥊','Legendario',115,15],
+['muzan','Muzan','🩸','Legendario',125,16],
+['yoriichi','Yoriichi','☀️','Mítico',230,25],
+
+['civil','Civil','🧑','Comun',5,1],
+['zoro','Zoro','⚔️','Poco-común',18,2],
+['eren','Eren','🧣','Poco-común',20,2],
+['naruto','Naruto','🍥','Raro',35,4],
+['sasuke','Sasuke','⚡','Raro',36,4],
 ['luffy','Luffy','👒','Épico',60,7],
-['ichigo','Ichigo','⚔️','Legendario',118,14],
+['kakashi','Kakashi','🥷','Épico',68,8],
+['ichigo','Ichigo','⚔️','Legendario',118,15],
+['aizen','Aizen','🌀','Legendario',130,17],
+['madara','Madara','🔥','Mítico',245,27],
+
+['gojo','Gojo','🔵','Legendario',150,18],
+['kokushibo','Kokushibo','🌙','Mítico',230,25],
 ['sanemi','Sanemi','🌪️','Legendario',120,15],
-['gyomei','Gyomei Himejima','🪨','Legendario',130,16],
-['madara','Madara','🔥','Mítico',240,27]
+['gyomei','Gyomei Himejima','🪨','Legendario',130,16]
 ].map(a=>({id:a[0],name:a[1],emoji:a[2],rarity:a[3],power:a[4],income:a[5]}));
 
 const banners={
-sukuna:'pollo aldeano aprendiz cazador yuji megumi nobara gojo mahito sukuna',
-demon:'pollo aldeano aprendiz cazador nezuko zenitsu inosuke tanjiro kokushibo yoriichi',
-anime:'pollo aldeano aprendiz cazador yuji zenitsu luffy megumi ichigo gojo madara'
+sukuna:'pollo aldeano aprendiz cazador yuji megumi nobara jogo mahito sukuna',
+demon:'murata kanao zenitsu inosuke tanjiro rengoku giyu akaza muzan yoriichi',
+anime:'civil zoro eren naruto sasuke luffy kakashi ichigo aizen madara'
 };
 
-const chances={'Comun':55,'Poco-común':25,'Raro':12,'Épico':6,'Legendario':1.8,'Mítico':.2};
+const bannerNames={
+sukuna:'Dominio Maldito',
+demon:'Cazadores y Demonios',
+anime:'Leyendas del Anime'
+};
+
+const chances={
+'Comun':55,
+'Poco-común':25,
+'Raro':12,
+'Épico':6,
+'Legendario':1.8,
+'Mítico':.2
+};
 
 const sacrificeOdds={
-'Comun':10,'Poco-común':25,'Raro':45,'Épico':65,'Legendario':85,'Mítico':100
+'Comun':10,
+'Poco-común':25,
+'Raro':45,
+'Épico':65,
+'Legendario':85,
+'Mítico':100
 };
 
 const ticketValues={
-'Comun':1,'Poco-común':2,'Raro':3,'Épico':5,'Legendario':10,'Mítico':20
+'Comun':1,
+'Poco-común':2,
+'Raro':3,
+'Épico':5,
+'Legendario':10,
+'Mítico':20
 };
 
 const wheelData={
@@ -243,13 +318,55 @@ prizes:[
 ]}
 };
 
+const bosses=[
+{name:'Sukuna',emoji:'👹',hp:1.15,damage:1.1},
+{name:'Muzan',emoji:'🩸',hp:1.3,damage:1},
+{name:'Mahito',emoji:'🧩',hp:1,damage:1.25},
+{name:'Akaza',emoji:'🥊',hp:1.2,damage:1.15},
+{name:'Maldición ancestral',emoji:'🐉',hp:1.4,damage:1.2}
+];
+
+const skills={
+yuji:['Puño Divergente','Golpe Negro','Impacto Maldito'],
+megumi:['Perros Divinos','Nue de las Sombras','Jardín de Sombras'],
+nobara:['Clavos Malditos','Resonancia','Muñeco Maldito'],
+sukuna:['Corte','Desmantelar','Santuario Malévolo'],
+jogo:['Lluvia de Fuego','Erupción','Meteorito'],
+mahito:['Transfiguración','Alma Retorcida','Expansión del Vacío'],
+zenitsu:['Relámpago','Seis Pliegues','Dios del Trueno'],
+inosuke:['Colmillo','Danza Salvaje','Bestia Desatada'],
+tanjiro:['Corte de Agua','Danza del Dios del Fuego','Hinokami Kagura'],
+rengoku:['Llama Ascendente','Tigre de Fuego','Novena Forma'],
+giyu:['Calma Total','Corte Fluido','Décima Primera Forma'],
+akaza:['Destructora','Agujas de Brújula','Muerte Destructora'],
+muzan:['Látigos','Explosión de Sangre','Rey Demonio'],
+yoriichi:['Corte Solar','Danza Solar','Decimotercera Forma'],
+naruto:['Rasengan','Clones de Sombra','Modo Sabio'],
+sasuke:['Chidori','Amaterasu','Susanoo'],
+luffy:['Gomu Gomu','Gear Second','Gear Fifth'],
+zoro:['Tres Espadas','Corte Demoníaco','Rey del Infierno'],
+kakashi:['Raikiri','Clones','Kamui'],
+ichigo:['Getsuga','Bankai','Getsuga Final'],
+aizen:['Hipnosis','Hadō','Kyoka Suigetsu'],
+madara:['Abanico de Guerra','Susanoo','Meteoritos'],
+gojo:['Azul','Rojo','Vacío Infinito'],
+kokushibo:['Lunas Crecientes','Corte Lunar','Luna Creciente: Tormenta'],
+sanemi:['Viento Cortante','Vendaval','Tormenta de Viento'],
+gyomei:['Hacha de Piedra','Cadena Destructora','Golpe del Pilar']
+};
+
 let S=JSON.parse(localStorage.getItem('astraSave'))||{
 gems:1000,tickets:5,inventory:{},equipped:[],pity:0,
 level:1,xp:0,banner:'sukuna',wins:0,pulls:0,
 sacrifices:0,spins:0
 };
 
-let E={hp:100,max:100,php:100,pmax:100,level:1,over:false};
+let E={
+hp:100,max:100,php:100,pmax:100,level:1,
+over:false,phase:1,energy:0,cooldowns:{},
+boss:null,turn:0
+};
+
 let spinning=false;
 let wheelTimer=null;
 const $=id=>document.getElementById(id);
@@ -299,11 +416,7 @@ missions();
 
 function changeBanner(){
 S.banner=$('banner').value;
-$('bannerTitle').textContent={
-sukuna:'Dominio Maldito',
-demon:'Cazadores y Demonios',
-anime:'Leyendas del Anime'
-}[S.banner];
+$('bannerTitle').textContent=bannerNames[S.banner];
 localStorage.setItem('astraSave',JSON.stringify(S));
 $('bannerCharacters').classList.add('hidden');
 }
@@ -319,18 +432,20 @@ return 'Comun';
 
 function roll(){
 let rarity=S.pity>=299?'Legendario':rarityRoll();
-let pool=banners[S.banner].split(' ').map(get).filter(c=>c.rarity===rarity);
+let pool=banners[S.banner].split(' ').map(get).filter(c=>c&&c.rarity===rarity);
 
 if(!pool.length){
 for(let r of ['Épico','Raro','Poco-común','Comun']){
-pool=banners[S.banner].split(' ').map(get).filter(c=>c.rarity===r);
+pool=banners[S.banner].split(' ').map(get).filter(c=>c&&c.rarity===r);
 if(pool.length){rarity=r;break;}
 }
 }
 
 let c=pool[Math.floor(Math.random()*pool.length)];
+
 if(rarity==='Legendario')S.pity=0;
 else if(rarity!=='Mítico')S.pity++;
+
 S.inventory[c.id]=(S.inventory[c.id]||0)+1;
 S.pulls++;
 return c;
@@ -381,13 +496,12 @@ return `<div class="row between">
 <b>${probability.toFixed(2)}%</b>
 </div>`;
 }).join('')+
-'<small>El mítico de cada banner tiene una probabilidad total de 0,2%. No tiene pity.</small>';
-
+'<small>El mítico tiene 0,2% de probabilidad total y no tiene pity.</small>';
 el.classList.remove('hidden');
 }
 
 function renderTeam(){
-$('equipped').innerHTML=S.equipped.map(id=>
+$('equipped').innerHTML=S.equipped.filter(id=>get(id)).map(id=>
 card(get(id))+`<button onclick="unequip('${id}')">Quitar</button>`
 ).join('')||'Sin personajes equipados';
 
@@ -472,12 +586,10 @@ ${p.emoji}<br><b>${p.name}</b><br>
 
 function spin(){
 if(spinning)return;
-
 let type=$('wheelType').value;
 let data=wheelData[type];
 
-if(S.tickets<data.cost)
-return alert('No tienes suficientes tickets.');
+if(S.tickets<data.cost)return alert('No tienes suficientes tickets.');
 
 S.tickets-=data.cost;
 spinning=true;
@@ -490,30 +602,21 @@ let prizeIndex=0;
 
 for(let i=0;i<data.prizes.length;i++){
 x-=data.prizes[i].weight;
-if(x<0){
-prizeIndex=i;
-break;
-}
+if(x<0){prizeIndex=i;break;}
 }
 
 let countSteps=0;
 let totalSteps=35+prizeIndex;
-let current=0;
 
 wheelTimer=setInterval(()=>{
-document.querySelectorAll('#wheelPrizes .prize')
-.forEach(p=>p.classList.remove('active'));
-
-current=countSteps%data.prizes.length;
+document.querySelectorAll('#wheelPrizes .prize').forEach(p=>p.classList.remove('active'));
+let current=countSteps%data.prizes.length;
 $('wheelPrize'+current).classList.add('active');
 countSteps++;
 
 if(countSteps>=totalSteps){
 clearInterval(wheelTimer);
-
-document.querySelectorAll('#wheelPrizes .prize')
-.forEach(p=>p.classList.remove('active'));
-
+document.querySelectorAll('#wheelPrizes .prize').forEach(p=>p.classList.remove('active'));
 $('wheelPrize'+prizeIndex).classList.add('active');
 
 let prize=data.prizes[prizeIndex];
@@ -536,17 +639,29 @@ save();
 },110);
 }
 
+/* SISTEMA DE COMBATE */
+
 function newBattle(){
 E.level=Math.max(1,S.level+Math.floor(S.wins/3));
-E.max=80+E.level*30;
+E.max=Math.floor((180+E.level*75)*(.9+Math.random()*.35));
 E.hp=E.max;
-E.pmax=100+power()*2;
+E.pmax=150+power()*2;
 E.php=E.pmax;
 E.over=false;
-$('enemyName').textContent='Enemigo nivel '+E.level;
-$('enemyEmoji').textContent=['👹','🐉','👾','🐺'][Math.floor(Math.random()*4)];
-$('battleLog').textContent='¡Un enemigo se interpone en tu camino!';
+E.phase=1;
+E.energy=0;
+E.cooldowns={};
+E.turn=0;
+E.boss=bosses[Math.floor(Math.random()*bosses.length)];
+
+$('enemyName').textContent=E.boss.name+' · Nivel '+E.level;
+$('enemyEmoji').textContent=E.boss.emoji;
+$('battleLog').textContent='¡Un jefe apareció! Prepárate para luchar.';
 battleRender();
+}
+
+function activeCharacter(){
+return S.equipped.map(get).filter(Boolean).sort((a,b)=>b.power-a.power)[0];
 }
 
 function battleRender(){
@@ -554,57 +669,156 @@ $('enemyHp').textContent=Math.max(0,E.hp)+'/'+E.max+' HP';
 $('enemyBar').style.width=Math.max(0,E.hp/E.max*100)+'%';
 $('playerHp').textContent=Math.max(0,E.php)+'/'+E.pmax+' HP';
 $('playerBar').style.width=Math.max(0,E.php/E.pmax*100)+'%';
-$('attackBtn').disabled=E.over;
-$('battleTeam').innerHTML=S.equipped.map(id=>card(get(id))).join('')||'Sin equipo';
+$('energyText').textContent=E.energy;
+$('energyBar').style.width=E.energy+'%';
+$('bossPhase').textContent='Fase '+E.phase+'/3';
+$('attackBtn')?.setAttribute('disabled',E.over?'':'');
+$('battleTeam').innerHTML=S.equipped.filter(id=>get(id)).map(id=>card(get(id))).join('')||'Sin equipo';
+
+let c=activeCharacter();
+let names=c?(skills[c.id]||['Técnica especial','Técnica poderosa','Técnica definitiva']):['Habilidad 1','Habilidad 2','Definitiva'];
+
+$('skill1Btn').textContent='✨ '+names[0]+' · 25 energía';
+$('skill2Btn').textContent='💥 '+names[1]+' · 50 energía';
+$('ultimateBtn').textContent='🌟 '+names[2]+' · 100 energía';
+
+$('skill1Btn').disabled=E.over||E.energy<25||(E.cooldowns[1]||0)>0;
+$('skill2Btn').disabled=E.over||E.energy<50||(E.cooldowns[2]||0)>0;
+$('ultimateBtn').disabled=E.over||E.energy<100;
+
+$('skillInfo').textContent=
+`Turno ${E.turn+1} · Habilidad 1: ${E.cooldowns[1]||0} turnos de recarga · Habilidad 2: ${E.cooldowns[2]||0} turnos de recarga`;
 }
 
-function combatGojoDrop(){
-if(Math.random()<0.0001){
-S.inventory.gojo=(S.inventory.gojo||0)+1;
-$('battleLog').innerHTML+='<br><b class="Legendario">¡INCREÍBLE! ¡Conseguiste a Gojo!</b>';
-return true;
+function updatePhase(){
+let percent=E.hp/E.max;
+
+if(percent<=.30&&E.phase<3){
+E.phase=3;
+$('battleLog').innerHTML+='<br><b class="Legendario">¡FASE 3! ¡El jefe desata todo su poder!</b>';
+}else if(percent<=.65&&E.phase<2){
+E.phase=2;
+$('battleLog').innerHTML+='<br><b class="Legendario">¡FASE 2! ¡El jefe se transforma!</b>';
 }
-return false;
 }
 
-function attack(){
+function basicAttack(){
 if(E.over)return;
-let damage=Math.max(8,Math.floor(power()*(.65+Math.random()*.5)+10));
+let damage=Math.max(8,Math.floor(power()*(.65+Math.random()*.45)+10));
+E.energy=Math.min(100,E.energy+20);
+playerAction(damage,'Ataque básico');
+}
+
+function useSkill(number){
+if(E.over)return;
+let cost=number===1?25:50;
+if(E.energy<cost)return;
+if((E.cooldowns[number]||0)>0)return;
+
+let c=activeCharacter();
+if(!c)return alert('Equipa al menos un personaje.');
+
+let damage;
+if(number===1){
+damage=Math.floor(power()*1.15+25);
+E.energy-=25;
+E.cooldowns[1]=2;
+playerAction(damage,'Habilidad especial de '+c.name);
+}else{
+damage=Math.floor(power()*1.9+45);
+E.energy-=50;
+E.cooldowns[2]=3;
+playerAction(damage,'Habilidad poderosa de '+c.name);
+}
+}
+
+function ultimate(){
+if(E.over||E.energy<100)return;
+let c=activeCharacter();
+if(!c)return alert('Equipa al menos un personaje.');
+
+let damage=Math.floor(power()*3.5+100);
+E.energy=0;
+playerAction(damage,'¡ATAQUE DEFINITIVO DE '+c.name.toUpperCase()+'!');
+}
+
+function playerAction(damage,actionName){
+E.turn++;
 E.hp-=damage;
-$('battleLog').innerHTML+='Tu equipo causa '+damage+' de daño.<br>';
+$('battleLog').innerHTML+=`<br><b>${actionName}</b>: ${damage} de daño.`;
+
+updatePhase();
 
 if(E.hp<=0){
 E.hp=0;
+finishBattle(true);
+return;
+}
+
+enemyTurn();
+battleRender();
+}
+
+function enemyTurn(){
+if(E.over)return;
+
+let phaseMultiplier=E.phase===1?1:E.phase===2?1.35:1.75;
+let damage=Math.floor((15+E.level*5)*E.boss.damage*phaseMultiplier);
+let special=Math.random()<.25;
+
+if(special){
+damage=Math.floor(damage*1.6);
+$('battleLog').innerHTML+='<br>⚠️ ¡El jefe usa un ataque especial!';
+}else{
+$('battleLog').innerHTML+='<br>El jefe ataca.';
+}
+
+E.php-=damage;
+$('battleLog').innerHTML+=` Te causa ${damage} de daño.`;
+
+Object.keys(E.cooldowns).forEach(k=>{
+if(E.cooldowns[k]>0)E.cooldowns[k]--;
+});
+
+if(E.php<=0){
+E.php=0;
+finishBattle(false);
+}
+}
+
+function finishBattle(won){
 E.over=true;
+
+if(won){
 let gems=60+E.level*12;
 let tickets=1+Math.floor(E.level/4);
 S.gems+=gems;
 S.tickets+=tickets;
 S.wins++;
 S.xp+=30+E.level*10;
+
 while(S.xp>=S.level*100){
 S.xp-=S.level*100;
 S.level++;
 }
-$('battleLog').innerHTML+=`¡Victoria! +${gems} gemas y +${tickets} tickets.`;
+
+$('battleLog').innerHTML+=`<br><b class="Legendario">¡VICTORIA!</b> +${gems} gemas y +${tickets} tickets.`;
+}else{
+$('battleLog').innerHTML+='<br><b>Derrota.</b> Tu equipo cayó. Puedes intentarlo otra vez.';
+}
+
 combatGojoDrop();
 save();
 battleRender();
-return;
 }
 
-let enemyDamage=Math.max(5,12+E.level*5-Math.floor(power()*.08));
-E.php-=enemyDamage;
-$('battleLog').innerHTML+='El enemigo causa '+enemyDamage+' de daño.<br>';
-
-if(E.php<=0){
-E.php=0;
-E.over=true;
-$('battleLog').innerHTML+='Tu equipo cayó. Mejora tus personajes.';
-combatGojoDrop();
+function combatGojoDrop(){
+if(Math.random()<0.0001){
+S.inventory.gojo=(S.inventory.gojo||0)+1;
+$('battleLog').innerHTML+='<br><b class="Legendario">¡INCREÍBLE! ¡CONSEGUISTE A GOJO!</b>';
+return true;
 }
-save();
-battleRender();
+return false;
 }
 
 function missions(){
@@ -614,6 +828,7 @@ let m=[
 ['Sacrifica 10 cartas',S.sacrifices,10,100,'gems'],
 ['Gira la ruleta 3 veces',S.spins,3,150,'gems']
 ];
+
 $('missionList').innerHTML=m.map((a,i)=>`
 <div class="panel">
 <b>${a[0]}</b>
@@ -634,12 +849,9 @@ S[m[i][0]]+=m[i][1];
 save();
 }
 
-$('banner').value=S.banner;
-$('bannerTitle').textContent={
-sukuna:'Dominio Maldito',
-demon:'Cazadores y Demonios',
-anime:'Leyendas del Anime'
-}[S.banner];
+$('banner').value=banners[S.banner]?S.banner:'sukuna';
+S.banner=$('banner').value;
+$('bannerTitle').textContent=bannerNames[S.banner];
 
 newBattle();
 render();
@@ -650,6 +862,7 @@ S.gems+=income();
 $('gems').textContent=Math.floor(S.gems);
 localStorage.setItem('astraSave',JSON.stringify(S));
 },1000);
+
 </script>
 </body>
 </html>
