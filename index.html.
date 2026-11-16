@@ -8,7 +8,7 @@
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#0b1020;color:white;font-family:Arial,sans-serif}
-header{background:#121d35;padding:15px;position:sticky;top:0}
+header{background:#121d35;padding:15px;position:sticky;top:0;z-index:5}
 h1{color:#65dcff;margin:5px}
 nav{display:flex;gap:6px;overflow:auto;margin-top:12px}
 button,select,input{padding:10px;border-radius:9px;border:1px solid #405477;background:#243657;color:white}
@@ -24,6 +24,7 @@ section.active{display:block}
 .pic{font-size:45px;text-align:center;padding:12px}
 .name{font-weight:bold}
 .stat{color:#aebedb;font-size:13px;margin:5px 0}
+small{color:#aebedb;font-size:12px}
 .Comun{color:#ddd}.Poco-común{color:#7effb5}.Raro{color:#65dfff}.Épico{color:#c49aff}.Legendario{color:#ffd36b}.Mítico{color:#ff78bd}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .between{justify-content:space-between}
@@ -31,6 +32,12 @@ section.active{display:block}
 .bar{height:9px;background:#080e1d;border-radius:10px;overflow:hidden;margin:8px 0}
 .bar span{display:block;height:100%;background:#63e3ff}
 .log{background:#080e1d;padding:12px;border-radius:10px;min-height:90px;max-height:170px;overflow:auto}
+#wheel{width:190px;height:190px;margin:20px auto;border-radius:50%;border:9px solid #65dcff;background:conic-gradient(#ffcf65 0 20%,#6846a5 20% 40%,#247e9b 40% 60%,#a83e75 60% 80%,#317b58 80%);display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:bold;box-shadow:0 0 25px #65dcff55;transition:transform 4s cubic-bezier(.12,.7,.15,1)}
+#wheel span{background:#101a30;padding:15px;border-radius:50%}
+.wheel-pointer{font-size:25px;text-align:center;margin-bottom:-20px}
+.prize-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.prize{background:#243657;border-radius:9px;padding:10px;text-align:center;font-size:13px}
+.hidden{display:none}
 @media(max-width:500px){.grid{grid-template-columns:repeat(2,1fr)}nav{white-space:nowrap}}
 </style>
 </head>
@@ -72,7 +79,7 @@ section.active{display:block}
 <p>Pity Legendario: <b id="pity">0</b>/300</p>
 <p class="stat">Mítico: sin pity.</p>
 <button onclick="showRates()">Ver probabilidades</button>
-<div id="rates"></div>
+<div id="rates" class="hidden"></div>
 </div>
 <div class="panel">
 <h3>Resultados</h3>
@@ -102,6 +109,15 @@ section.active{display:block}
 <p>Derrota enemigos para ganar gemas y tickets.</p>
 </div>
 <div class="panel">
+<h3>Recompensas posibles</h3>
+<div class="prize-list">
+<div class="prize">💎 Gemas<br><b>60 + nivel × 12</b></div>
+<div class="prize">🎟️ Tickets<br><b>1 + nivel / 4</b></div>
+<div class="prize">🔵 Gojo<br><b>0,01 % por combate</b></div>
+</div>
+<p class="stat">Las recompensas se revisan al terminar cada combate, incluso si pierdes.</p>
+</div>
+<div class="panel">
 <h3 id="enemyName">Maldición errante</h3>
 <div class="pic" id="enemyEmoji">👹</div>
 <div class="bar"><span id="enemyBar" style="width:100%"></span></div>
@@ -119,7 +135,7 @@ section.active{display:block}
 <section id="sac">
 <div class="hero">
 <h2>Sacrificio de personajes</h2>
-<p>Elige cuántas copias quieres sacrificar para recibir tickets.</p>
+<p>Elige cuántas copias quieres sacrificar para intentar recibir tickets.</p>
 </div>
 <div class="panel">
 <p>Personaje:</p>
@@ -134,11 +150,20 @@ section.active{display:block}
 <section id="casino">
 <div class="hero">
 <h2>🎰 Ruleta Astra</h2>
-<p>Un ticket por giro.</p>
+<p>Elige tu ruleta. Cada una tiene un precio y premios diferentes.</p>
 </div>
 <div class="panel">
+<select id="wheelType" onchange="showWheelPrizes()">
+<option value="normal">Ruleta normal · 1 ticket</option>
+<option value="silver">Ruleta plateada · 3 tickets</option>
+<option value="gold">Ruleta dorada · 5 tickets</option>
+</select>
+<h3>Premios disponibles</h3>
+<div id="wheelPrizes" class="prize-list"></div>
+<div class="wheel-pointer">▼</div>
+<div id="wheel"><span>ASTRA</span></div>
 <h2 id="casinoResult">¿Tendrás suerte?</h2>
-<button onclick="spin()">Girar ruleta · 1 ticket</button>
+<button id="spinBtn" onclick="spin()">Girar ruleta</button>
 <p id="casinoLog"></p>
 </div>
 </section>
@@ -178,6 +203,43 @@ anime:'pollo aldeano aprendiz cazador yuji zenitsu luffy megumi ichigo gojo suku
 };
 const chances={'Comun':55,'Poco-común':25,'Raro':12,'Épico':6,'Legendario':1.8,'Mítico':.2};
 
+const sacrificeOdds={
+'Comun':10,'Poco-común':25,'Raro':45,'Épico':65,'Legendario':85,'Mítico':100
+};
+const ticketValues={
+'Comun':1,'Poco-común':2,'Raro':3,'Épico':5,'Legendario':10,'Mítico':20
+};
+
+const wheelData={
+normal:{
+cost:1,
+prizes:[
+{name:'20 gemas',value:20,weight:40,emoji:'💎'},
+{name:'50 gemas',value:50,weight:30,emoji:'💎'},
+{name:'100 gemas',value:100,weight:18,emoji:'💎'},
+{name:'250 gemas',value:250,weight:9,emoji:'💎'},
+{name:'500 gemas',value:500,weight:3,emoji:'💎'}
+]},
+silver:{
+cost:3,
+prizes:[
+{name:'100 gemas',value:100,weight:35,emoji:'💎'},
+{name:'200 gemas',value:200,weight:30,emoji:'💎'},
+{name:'400 gemas',value:400,weight:20,emoji:'💎'},
+{name:'700 gemas',value:700,weight:10,emoji:'💎'},
+{name:'1000 gemas',value:1000,weight:5,emoji:'💎'}
+]},
+gold:{
+cost:5,
+prizes:[
+{name:'300 gemas',value:300,weight:35,emoji:'💎'},
+{name:'600 gemas',value:600,weight:30,emoji:'💎'},
+{name:'1000 gemas',value:1000,weight:20,emoji:'💎'},
+{name:'2000 gemas',value:2000,weight:10,emoji:'💎'},
+{name:'5000 gemas',value:5000,weight:5,emoji:'💎'}
+]}
+};
+
 let S=JSON.parse(localStorage.getItem('astraSave'))||{
 gems:1000,tickets:5,inventory:{},equipped:[],pity:0,
 level:1,xp:0,banner:'sukuna',wins:0,pulls:0,
@@ -185,6 +247,7 @@ sacrifices:0,spins:0
 };
 
 let E={hp:100,max:100,php:100,pmax:100,level:1,over:false};
+let spinning=false;
 const $=id=>document.getElementById(id);
 const get=id=>chars.find(c=>c.id===id);
 const count=id=>S.inventory[id]||0;
@@ -198,6 +261,8 @@ function tab(id){
 document.querySelectorAll('main section').forEach(x=>x.classList.remove('active'));
 $(id).classList.add('active');
 render();
+if(id==='casino')showWheelPrizes();
+if(id==='battle')battleRender();
 }
 
 function power(){
@@ -235,7 +300,7 @@ sukuna:'Dominio Maldito',
 demon:'Cazadores y Demonios',
 anime:'Leyendas del Anime'
 }[S.banner];
-save();
+localStorage.setItem('astraSave',JSON.stringify(S));
 }
 
 function rarityRoll(){
@@ -259,10 +324,8 @@ if(pool.length){rarity=r;break;}
 }
 
 let c=pool[Math.floor(Math.random()*pool.length)];
-
 if(rarity==='Legendario')S.pity=0;
 else if(rarity!=='Mítico')S.pity++;
-
 S.inventory[c.id]=(S.inventory[c.id]||0)+1;
 S.pulls++;
 return c;
@@ -279,14 +342,21 @@ save();
 }
 
 function showRates(){
-$('rates').innerHTML=
-Object.entries(chances).map(([r,p])=>r+': '+p+'%').join(' · ');
+let el=$('rates');
+if(!el.classList.contains('hidden')){
+el.classList.add('hidden');
+return;
+}
+el.innerHTML='<h3>Probabilidades de invocación</h3>'+
+Object.entries(chances).map(([r,p])=>
+`<p class="${r}">${r}: <b>${p}%</b></p>`).join('')+
+'<small>Las probabilidades se aplican a cada invocación.</small>';
+el.classList.remove('hidden');
 }
 
 function renderTeam(){
 $('equipped').innerHTML=S.equipped.map(id=>
-card(get(id))+
-`<button onclick="unequip('${id}')">Quitar</button>`
+card(get(id))+`<button onclick="unequip('${id}')">Quitar</button>`
 ).join('')||'Sin personajes equipados';
 
 $('inventory').innerHTML=chars.filter(c=>count(c.id)>0).map(c=>
@@ -307,11 +377,6 @@ S.equipped=S.equipped.filter(x=>x!==id);
 save();
 }
 
-function unequipAll(){
-S.equipped=[];
-save();
-}
-
 function renderSac(){
 let options=chars.filter(c=>count(c.id)>0);
 let old=$('sacChar').value;
@@ -327,39 +392,79 @@ let c=get($('sacChar').value);
 if(!c){$('sacInfo').textContent='No tienes cartas.';return;}
 let q=Math.max(1,Math.min(count(c.id),parseInt($('sacQty').value)||1));
 $('sacQty').max=count(c.id);
-let value={'Comun':1,'Poco-común':2,'Raro':3,'Épico':5,'Legendario':10,'Mítico':20}[c.rarity];
-$('sacInfo').innerHTML=`Tienes ${count(c.id)} copias.<br>Recibirás ${q*value} tickets.`;
+let chance=sacrificeOdds[c.rarity];
+let value=ticketValues[c.rarity];
+$('sacInfo').innerHTML=
+`Tienes ${count(c.id)} copias.<br>
+Probabilidad de recibir tickets por carta: <b>${chance}%</b>.<br>
+Si tienes suerte: ${value} ticket(s) por carta.<br>
+<small>Con ${q} sacrificio(s), cada carta tendrá una tirada independiente. No hay tickets garantizados.</small>`;
 }
 
 function sacrifice(){
 let c=get($('sacChar').value);
-if(!c||!count(c.id))return;
+if(!c||!count(c.id))return alert('No tienes ese personaje.');
 let q=Math.max(1,Math.min(count(c.id),parseInt($('sacQty').value)||1));
+
 if(S.equipped.includes(c.id)&&q>=count(c.id)){
 if(!confirm('Está equipado. ¿Quieres quitarlo y sacrificar todas las copias?'))return;
-unequip(c.id);
+S.equipped=S.equipped.filter(x=>x!==c.id);
 }
-let value={'Comun':1,'Poco-común':2,'Raro':3,'Épico':5,'Legendario':10,'Mítico':20}[c.rarity];
+
+let won=0;
+for(let i=0;i<q;i++){
+if(Math.random()*100<sacrificeOdds[c.rarity]){
+won+=ticketValues[c.rarity];
+}
+}
+
 S.inventory[c.id]-=q;
 if(!S.inventory[c.id])delete S.inventory[c.id];
-S.tickets+=q*value;
+S.tickets+=won;
 S.sacrifices+=q;
-alert('¡Sacrificio realizado! Recibiste '+q*value+' tickets.');
+alert(`Sacrificio realizado.\nCartas sacrificadas: ${q}\nTickets conseguidos: ${won}`);
 save();
 }
 
+function showWheelPrizes(){
+let type=$('wheelType').value;
+let data=wheelData[type];
+$('spinBtn').textContent=`Girar ruleta · ${data.cost} tickets`;
+$('wheelPrizes').innerHTML=data.prizes.map(p=>
+`<div class="prize">${p.emoji}<br><b>${p.name}</b><br><small>Probabilidad: ${p.weight}%</small></div>`
+).join('');
+}
+
 function spin(){
-if(S.tickets<1)return alert('Necesitas un ticket.');
-S.tickets--;
-let prizes=[20,50,100,250,500];
-let weights=[40,30,18,9,3];
-let x=Math.random()*100,i=0;
-while(x>=weights[i])x-=weights[i++];
-S.gems+=prizes[i];
+if(spinning)return;
+let type=$('wheelType').value;
+let data=wheelData[type];
+if(S.tickets<data.cost)return alert('No tienes suficientes tickets.');
+S.tickets-=data.cost;
+spinning=true;
+$('spinBtn').disabled=true;
+$('casinoResult').textContent='La ruleta está girando...';
+$('casinoLog').textContent='Buena suerte.';
+let x=Math.random()*100;
+let prize=data.prizes[data.prizes.length-1];
+for(let p of data.prizes){
+x-=p.weight;
+if(x<0){prize=p;break;}
+}
+let wheel=$('wheel');
+let current=Number(wheel.dataset.rotation||0);
+let rotation=current+1800+Math.floor(Math.random()*360);
+wheel.style.transform=`rotate(${rotation}deg)`;
+wheel.dataset.rotation=rotation;
+setTimeout(()=>{
+S.gems+=prize.value;
 S.spins++;
-$('casinoResult').textContent='¡Ganaste '+prizes[i]+' gemas!';
-$('casinoLog').textContent='La ruleta te entregó '+prizes[i]+' gemas.';
+$('casinoResult').textContent=`¡Ganaste ${prize.name}!`;
+$('casinoLog').textContent=`La ruleta te entregó ${prize.value} gemas.`;
+spinning=false;
+$('spinBtn').disabled=false;
 save();
+},4100);
 }
 
 function newBattle(){
@@ -384,6 +489,15 @@ $('attackBtn').disabled=E.over;
 $('battleTeam').innerHTML=S.equipped.map(id=>card(get(id))).join('')||'Sin equipo';
 }
 
+function combatGojoDrop(){
+if(Math.random()<0.0001){
+S.inventory.gojo=(S.inventory.gojo||0)+1;
+$('battleLog').innerHTML+='<br><b class="Legendario">¡INCREÍBLE! ¡Conseguiste a Gojo!</b>';
+return true;
+}
+return false;
+}
+
 function attack(){
 if(E.over)return;
 let damage=Math.max(8,Math.floor(power()*(.65+Math.random()*.5)+10));
@@ -403,7 +517,8 @@ while(S.xp>=S.level*100){
 S.xp-=S.level*100;
 S.level++;
 }
-$('battleLog').innerHTML+='¡Victoria! +'+gems+' gemas y +'+tickets+' tickets.';
+$('battleLog').innerHTML+=`¡Victoria! +${gems} gemas y +${tickets} tickets.`;
+combatGojoDrop();
 save();
 battleRender();
 return;
@@ -417,6 +532,7 @@ if(E.php<=0){
 E.php=0;
 E.over=true;
 $('battleLog').innerHTML+='Tu equipo cayó. Mejora tus personajes.';
+combatGojoDrop();
 }
 save();
 battleRender();
@@ -432,7 +548,8 @@ let m=[
 $('missionList').innerHTML=m.map((a,i)=>`
 <div class="panel">
 <b>${a[0]}</b>
-<p>${Math.min(a[1],a[2])}/${a[2]}</p>
+<p class="stat">${Math.min(a[1],a[2])}/${a[2]}</p>
+<small>Recompensa: ${a[3]} ${a[4]==='gems'?'💎 gemas':'🎟️ tickets'}</small>
 <div class="bar"><span style="width:${Math.min(100,a[1]/a[2]*100)}%"></span></div>
 <button ${a[1]<a[2]||S['claimed'+i]?'disabled':''} onclick="claim(${i})">
 ${S['claimed'+i]?'Reclamada':'Reclamar'}
@@ -442,16 +559,21 @@ ${S['claimed'+i]?'Reclamada':'Reclamar'}
 
 function claim(i){
 if(S['claimed'+i])return;
+let m=[['gems',100],['tickets',5],['gems',100],['gems',150]];
 S['claimed'+i]=true;
-let rewards=[['gems',100],['tickets',5],['gems',100],['gems',150]];
-S[rewards[i][0]]+=rewards[i][1];
+S[m[i][0]]+=m[i][1];
 save();
 }
 
 $('banner').value=S.banner;
-changeBanner();
+$('bannerTitle').textContent={
+sukuna:'Dominio Maldito',
+demon:'Cazadores y Demonios',
+anime:'Leyendas del Anime'
+}[S.banner];
 newBattle();
 render();
+showWheelPrizes();
 
 setInterval(()=>{
 S.gems+=income();
